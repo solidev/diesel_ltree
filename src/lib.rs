@@ -1,6 +1,6 @@
-//! diesel_ltree provides support for Postgres's 
-//! [ltree](https://www.postgresql.org/docs/current/ltree.html) extension, 
-//! including all of the operations and functions for working with hierarchial 
+//! diesel_ltree provides support for Postgres's
+//! [ltree](https://www.postgresql.org/docs/current/ltree.html) extension,
+//! including all of the operations and functions for working with hierarchial
 //! data in Postgres.
 extern crate byteorder;
 #[macro_use]
@@ -36,7 +36,7 @@ pub mod values {
     use diesel::sql_types::Text;
 
     /// A ltree [label path](https://www.postgresql.org/docs/current/ltree.html#LTREE-DEFINITIONS).
-    #[derive(Debug, PartialEq, Eq, Clone, FromSqlRow, AsExpression)]
+    #[derive(Debug, PartialEq, Eq, Clone, FromSqlRow, AsExpression, Default)]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(transparent))]
     #[diesel(sql_type = crate::sql_types::Ltree)]
@@ -90,6 +90,18 @@ pub mod values {
             bytes: <DB as diesel::backend::Backend>::RawValue<'_>,
         ) -> deserialize::Result<Self> {
             String::from_sql(bytes).map(Ltree)
+        }
+    }
+
+    impl Ltree {
+        /// As vec of labels.
+        pub fn as_vec(&self) -> Vec<String> {
+            self.0.split('.').map(String::from).collect()
+        }
+
+        /// From a vec of labels.
+        pub fn from_vec(vec: Vec<String>) -> Self {
+            Ltree(vec.join("."))
         }
     }
 }
@@ -196,7 +208,7 @@ pub mod dsl {
         fn any_contains<T: AsExpression<Ltree>>(self, other: T) -> Contains<Self, T::Expression> {
             Contains::new(self, other.as_expression())
         }
-        
+
         /// Checks if any Ltree expression in the array is contained by the specified Ltree expression.
         fn any_contained_by<T: AsExpression<Ltree>>(
             self,
@@ -217,7 +229,7 @@ pub mod dsl {
         ) -> MatchesAny<Self, T::Expression> {
             MatchesAny::new(self, other.as_expression())
         }
-        
+
         /// Checks if any Ltree expression in the array matches the specified Ltxtquery expression.
         fn any_tmatches<T: AsExpression<Ltxtquery>>(
             self,
@@ -233,7 +245,7 @@ pub mod dsl {
         ) -> FirstContains<Self, T::Expression> {
             FirstContains::new(self, other.as_expression())
         }
-        
+
         /// Checks if the first Ltree expression in the array is contained by the specified Ltree expression.
         fn first_contained_by<T: AsExpression<Ltree>>(
             self,
@@ -265,7 +277,7 @@ pub mod dsl {
         fn matches<T: AsExpression<Ltree>>(self, other: T) -> Matches<Self, T::Expression> {
             Matches::new(self, other.as_expression())
         }
-        
+
         /// Checks if the current Lquery expression matches any Ltree expression in the given array.
         fn matches_any<T: AsExpression<Array<Ltree>>>(
             self,
@@ -274,7 +286,7 @@ pub mod dsl {
             Matches::new(self, other.as_expression())
         }
     }
-    
+
     /// Adds Lquery-specific extensions to arrays of Lquery expressions.
     pub trait LqueryArrayExtensions: Expression<SqlType = Array<Lquery>> + Sized {
         /// Checks if any Lquery expression in the array matches the specified Ltree expression.
@@ -297,7 +309,7 @@ pub mod dsl {
         fn tmatches<T: AsExpression<Ltree>>(self, other: T) -> TMatches<Self, T::Expression> {
             TMatches::new(self, other.as_expression())
         }
-        
+
         /// Checks if the current Ltxtquery expression matches any Ltree expression in the given array.
         fn tmatches_any<T: AsExpression<Array<Ltree>>>(
             self,
