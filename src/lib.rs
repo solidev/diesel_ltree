@@ -104,6 +104,12 @@ pub mod values {
             Ltree(vec.join("."))
         }
     }
+
+    impl From<Vec<String>> for Ltree {
+        fn from(vec: Vec<String>) -> Self {
+            Ltree::from_vec(vec)
+        }
+    }
 }
 
 pub mod functions {
